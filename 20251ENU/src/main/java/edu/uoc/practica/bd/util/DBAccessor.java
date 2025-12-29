@@ -55,6 +55,7 @@ public class DBAccessor {
     String url = "jdbc:postgresql://" + this.host + ":" + this.port + "/" + this.dbname;
     try {
       conn = DriverManager.getConnection(url, this.user, this.passwd);
+      System.out.println("Connected to the PostgreSQL server successfully.");
     } catch (SQLException e) {
       String message = "ERROR: Could not connect to the database";
       System.err.println(message);

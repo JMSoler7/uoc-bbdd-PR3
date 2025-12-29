@@ -11,6 +11,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import edu.uoc.practica.bd.uocdb.exercise1.Exercise1Row;
+
+
 
 public class Exercise1PrintReportOverQuery {
 
@@ -30,7 +33,7 @@ public class Exercise1PrintReportOverQuery {
 
       try {
 
-    	List<Column> columns = Arrays.asList(new Column("Wine", 22, "wine_name"),
+        List<Column> columns = Arrays.asList(new Column("Wine", 22, "wine_name"),
             new Column("Winery", 14, "winery_name"),
             new Column("Pdo", 10, "pdo_name"),
             new Column("Vintage", 8, "vintage"),
@@ -42,15 +45,48 @@ public class Exercise1PrintReportOverQuery {
         report.setColumns(columns);
         List<Object> list = new ArrayList<Object>();
 
-        // TODO Execute SQL sentence
-        
-        // TODO Loop over results and get the main values
-        
-        // TODO End loop
-       
-      } 
-      // TODO Close All resources
-      finally {
+
+          // TODO Execute SQL sentence
+          cstmt = conn.createStatement();
+          resultSet = cstmt.executeQuery("SELECT * FROM premium_wines WHERE prizes > 5 ORDER BY price DESC;");
+
+          // TODO Loop over results and get the main values
+          while (resultSet.next()) {
+            Exercise1Row row = new Exercise1Row(
+                resultSet.getString("wine_name"),
+                resultSet.getString("winery_name"),
+                resultSet.getString("pdo_name"),
+                resultSet.getLong("vintage"),
+                resultSet.getLong("prizes"),
+                resultSet.getDouble("price"),
+                resultSet.getDate("bestbeforedate")
+            );
+            list.add(row);
+          }
+          // TODO End loop
+
+          if (list.isEmpty()) {
+            System.err.println("ERROR: List without data");
+            return;
+          }
+          report.printReport(list);
+      } catch (SQLException e) {
+        System.err.println("ERROR: List not available");
+      } finally {
+        // TODO Close All resources
+        try {
+          if (resultSet != null) {
+            resultSet.close();
+          }
+          if (cstmt != null) {
+            cstmt.close();
+          }
+          if (conn != null) {
+            conn.close();
+          }
+        } catch (SQLException e) {
+          System.err.println("ERROR: Could not close the resources");
+        }
       }
     }
   }
