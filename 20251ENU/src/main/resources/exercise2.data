@@ -1,0 +1,4 @@
+#wine_name,winery_name,winery_phone,dpo_name,vintage,alcohol_content,category,color,price,grape_id1,grape_id2,grape_id3
+San Marcos,Gaja,383-938-3039,Douro,2010,13,reserve,red,30,3,4,12
+Abalos,Planeta,132-323-3039,Navarra,2020,10,young,white,25,17,29,
+Solano,Ferrari,387-398-9795,Sicily,2015,16,reserve,red,90,12,,

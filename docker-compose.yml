@@ -1,0 +1,24 @@
+services:
+  app:
+    image: eclipse-temurin:21-jdk
+    depends_on:
+      - db
+    volumes:
+      - ./20251ENU:/app
+      - ./20251ENU/.gradle/caches:/root/.gradle/caches
+    working_dir: /app
+
+  db:
+    image: postgres:17
+    ports:
+      - 127.0.0.1:54320:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - pg_data:/var/lib/postgresql
+      - ./20251ENU/sql:/scripts
+
+volumes:
+  pg_data:
