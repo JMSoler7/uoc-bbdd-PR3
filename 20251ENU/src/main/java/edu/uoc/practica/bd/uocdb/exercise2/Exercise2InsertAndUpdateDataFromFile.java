@@ -57,8 +57,9 @@ public class Exercise2InsertAndUpdateDataFromFile {
       ResultSet generatedKeys = null;
       ResultSet rsWineryId = null;
       ResultSet rsPdoId = null;
-      PreparedStatement psUpdateWinery = conn.prepareStatement("UPDATE winery SET winery_phone = ? WHERE winery_name = ?");
-      PreparedStatement psSelectWinery = conn.prepareStatement("SELECT winery_id FROM winery WHERE winery_name = ?");
+      PreparedStatement psUpdateWinery = conn.prepareStatement(
+          "UPDATE winery SET winery_phone = ? WHERE winery_name = ? RETURNING winery_id"
+      );
       PreparedStatement psSelectPdo = conn.prepareStatement("SELECT pdo_id FROM pdo WHERE pdo_name = ?");
       PreparedStatement psInsertWine = conn.prepareStatement(
           "INSERT INTO wine (wine_name, winery_id, pdo_id, vintage, alcohol_content, category, color, price, stock) "
@@ -70,21 +71,17 @@ public class Exercise2InsertAndUpdateDataFromFile {
 
       // TODO Select, Update, insert or call from every row in file
       for (List<String> row : fileContents) {
-        // Actualitzem el celler i llencem un error si no s'actualitza cap fila
+        // Update winery and get winery_id
         setPSUpdateWinery(psUpdateWinery, row);
-        int rowsUpdated = psUpdateWinery.executeUpdate();
-        if (rowsUpdated == 0) {
-          throw new SQLException("No winery updated for row: " + row);
-        }
-        // Obtenim la winery_id i pdo_id a partir dels seus noms i llencem un error si no existeixen
-        setPSSelectWinery(psSelectWinery, row);
-        rsWineryId =  psSelectWinery.executeQuery();
-        int winery_id = -1;
+        rsWineryId = psUpdateWinery.executeQuery();
+        int winery_id;
+
         if (rsWineryId.next()) {
           winery_id = rsWineryId.getInt("winery_id");
         } else {
-          throw new SQLException("No winery found for row: " + row);
+          throw new SQLException("No winery updated for row: " + row);
         }
+        // Get pdo_id
         setPSSelectPdo(psSelectPdo, row);
         rsPdoId =  psSelectPdo.executeQuery();
         int pdo_id = -1;
@@ -93,32 +90,32 @@ public class Exercise2InsertAndUpdateDataFromFile {
         } else {
           throw new SQLException("No pdo found for row: " + row);
         }
-        // Insertem el vi, controlant si ja existeix
+        // Insert wine, checking if it already exists
         setPSInsertWine(psInsertWine, row, winery_id, pdo_id);
         try {
           psInsertWine.executeUpdate();
         } catch (SQLException e) {
           System.err.println("ERROR: Aquest vi ja existeix: " + row.get(0));
         }
-        // Obtenim el wine_id del vi inserit per inserir les seves varietats de raïm
+        // Get the wine_id of the inserted wine to insert its grape varieties
         generatedKeys = psInsertWine.getGeneratedKeys();
-          if (generatedKeys.next()) {
-          int wine_id = generatedKeys.getInt(1);
-          for (int grape_index = 9; grape_index < 12; grape_index++) {
-            Integer grape_id = null;
-            if (grape_index < row.size() && row.get(grape_index) != null && !row.get(grape_index).isEmpty()) {
-              grape_id = Integer.parseInt(row.get(grape_index));
-            }
-            if (grape_id != null){
-              setPSInsertWineGrape(psInsertWineGrape, grape_id, wine_id);
-              psInsertWineGrape.executeUpdate();
-            }
+        if (generatedKeys.next()) {
+        int wine_id = generatedKeys.getInt(1);
+        for (int grape_index = 9; grape_index < 12; grape_index++) {
+          Integer grape_id = null;
+          if (grape_index < row.size() && row.get(grape_index) != null && !row.get(grape_index).isEmpty()) {
+            grape_id = Integer.parseInt(row.get(grape_index));
           }
-          // Cridem la funció per obtenir el nombre de varietats de raïm i informem a l'usuari
-          setCSFunctionGrapeCount(csFunctionGrapeCount, wine_id);
-          csFunctionGrapeCount.execute();
-          int grape_count = csFunctionGrapeCount.getInt(1);
-          System.out.println("INFO: El vi amb ID " + wine_id + " ha estat carregat amb " + grape_count + " varietats de raïm.");
+          if (grape_id != null){
+            setPSInsertWineGrape(psInsertWineGrape, grape_id, wine_id);
+            psInsertWineGrape.executeUpdate();
+          }
+        }
+        // Call the function to get the number of grape varieties and inform the user
+        setCSFunctionGrapeCount(csFunctionGrapeCount, wine_id);
+        csFunctionGrapeCount.execute();
+        int grape_count = csFunctionGrapeCount.getInt(1);
+        System.out.println("INFO: El vi amb ID " + wine_id + " ha estat carregat amb " + grape_count + " varietats de raïm.");
         } else {
           throw new SQLException("No wine inserted for row: " + row);
         }
@@ -152,12 +149,6 @@ public class Exercise2InsertAndUpdateDataFromFile {
     }
   }
 
-  private void setPSSelectWinery(PreparedStatement selectStatement, List<String> row)
-      throws SQLException {
-    String[] rowArray = (String[]) row.toArray(new String[0]);
-    setValueOrNull(selectStatement, 1, getValueIfNotNull(rowArray, 1)); // winery_name
-  }
-  
   private void setPSUpdateWinery(PreparedStatement updateStatement, List<String> row)
       throws SQLException {
     String[] rowArray = (String[]) row.toArray(new String[0]);
